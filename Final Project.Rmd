@@ -1,0 +1,234 @@
+---
+title: "A Guide to Wine"
+output: html_document
+---
+# Introduction
+  In recent years, the amount of alcohol being had has increased, with minorities, women, and older adults drinking more than ever. Among the alcohols being readily consumed is wine - so much so that there are tropes about it in pop culture; memes about suburban wine moms are heavily referenced and brought up, and the idea of drinking wine is regarded as classy and proper. The amount of wine sales is high in the US and expected to grow, thanks to the millenial generation that is just coming of age. 
+  This tutorial will provide a data analysis of wines by examining point value ratings of wines, the countries of origin, the variety of wines, as well as provinces and the prices of the wines. This tutorial will also be investigating the null hypothesis of if there is a correlation between the point value rating and the price of wine.
+  The first part of the tutorial will include, data collection, and tidying. The second part of the tutorial will be about data visualisation and analysis of the displayed data. The third section of the tutorial will demonstrate Exploratory Data Analysis (EDA), a linear regression model to process the analysis, and a hypothesis test to determine whether we should reject our null hypothesis or not.
+
+
+# Required Libraries
+In order to create this tutorial, including the graphs, and other visualisations, we need to include the following libraries:
+
+The dataset being used for this tutorial can be found at https://www.kaggle.com/zynicide/wine-reviews/data
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(tidyr)
+```
+
+# Part 1: Data Collection
+In order to load the dataset, we first need to download it from https://www.kaggle.com/zynicide/wine-reviews/data. The dataset will be downloaded as a CSV (comma-separated value), as a file called winemag-data.first150k.csv . We then load our dataset into R using the following code: 
+```{r load_data, message=FALSE, warning=FALSE}
+# loading code goes here
+wine_csv <- read_csv("/Users/tara/Documents/UMD/Senior_Year/Spring2018/CMSC320/Projects/Final_Project/winemag-data_first150k.csv")
+
+wine_csv
+```
+## 1.1 Data Overview
+The dataset contains the following attributes for each entity:
+  country
+  description
+  designation
+  points
+  price
+  province
+  region_1
+  region_2
+  variety
+  winery
+  
+## 1.2 Data Tidying
+The dataset is already fairly tidy, as it is clear and concise, with uniform entries for most attributes per entity. 
+
+# Part 2: Data Analysis and Visualisation
+
+###Price of Wine vs Point Value Rating
+```{r}
+# pipeline goes here
+wine_pipe <- wine_csv %>%
+  #filter(points > 90) %>%
+  filter(!is.na(points)) %>%
+  filter(!is.na(price)) %>%
+  select(points, price) %>%
+  group_by(points) %>%
+  arrange(points)
+wine_pipe
+
+# plot goes here
+wine_pipe %>%
+  ggplot(aes(x=factor(points), y=price)) +
+  geom_bar(stat="identity",na.rm = TRUE, position = position_dodge())+
+  scale_y_continuous(labels = scales::dollar) +
+  ggtitle("Price of Wine vs. Point Value Rating") +
+  labs(x = "Point Value Rating", y = "Price")
+
+```
+
+
+This plot demonstrates that as the point value for each wine increases, the price also increases. However the trend isn't perfectly linear, as there is a sudden spike at the point value 92. 
+
+
+
+###Point Value Rating vs Production Region
+```{r}
+# pipeline goes here
+wine_pipe2 <- wine_csv %>%
+  filter(points > 90) %>%
+  filter(price > 1000) %>%
+  filter(!is.na(region_1)) %>%
+  select(region_1, points) %>%
+  group_by(points) %>%
+  arrange(points)
+wine_pipe2
+
+# plot goes here
+wine_pipe2 %>%
+  ggplot(aes(x=region_1, y=points)) +
+  geom_bar(stat="identity") +
+  ggtitle("Point Value Rating vs Production Region")+
+  labs(x="Production Region", y="Point Value Rating") +
+  theme(axis.text.x = element_text(angle=90, hjust = 1))
+```
+
+Here is a plot that visualises the point value rating of a wine against the region where the wine was produced. As you can tell by the code, we've only plotted wines with a point value rating above a 90, and a price above $1000. This is due to having too many data points. If we had plotted them all, the plot would be unreadable. This current plot indicates that of wines that are priced at over $1000, more wines made in the region of Champagne have point value ratings of 300 than any other wine from any other region.
+
+###Country of Origin vs Variety of Wine
+```{r}
+# pipeline goes here
+wine_pipe3 <- wine_csv %>%
+  #filter(points > 90) %>%
+  filter(price > 500) %>%
+  filter(!is.na(country)) %>%
+  select(variety, country) %>%
+  group_by(variety) %>%
+  arrange(variety)
+wine_pipe3
+
+# plot goes here
+wine_pipe3 %>%
+  ggplot(aes(x=variety, y=country)) +
+  geom_bar(stat="identity",na.rm = TRUE, position = position_dodge()) +
+  ggtitle("Country of Origin vs Variety of Wine")+
+  labs(x = "Variety of Wine", y = "Country of Origin") +
+  theme(axis.text.x = element_text(angle=90, hjust = 1))
+```
+
+The bar graph above displays Country of Origin vs Variety of Wine. From this, we can see that the United States produces the most Cabernet Sauvignon and Chardonnay wines, followed by Spain with the Carignan and Tempranillo wines. We can also tell that Australia doesn't produce many Shiraz wines.
+
+
+###Point Value Rating vs Country of Origin
+```{r}
+# pipeline goes here
+wine_pipe4 <- wine_csv %>%
+  #filter(points > 90) %>%
+  #filter(price > 1000) %>%
+  filter(!is.na(country)) %>%
+  select(points, country) %>%
+  group_by(country) %>%
+  arrange(country)
+wine_pipe4
+
+# plot goes here
+wine_pipe4 %>%
+  ggplot(aes(x=country, y=points)) +
+  geom_bar(stat="identity",na.rm = TRUE, position = position_dodge())+
+  ggtitle("Point Value Rating vs Country of Origin") +
+  labs(x = "Country of Origin", y = "Point Value Rating")+
+  theme(axis.text.x = element_text(angle=90, hjust = 1))
+```
+
+This bar graph shows the Point Value Rating of wines by their Country of Origin. From this we can tell that the United States ranks fairly highly in terms of Point Value Rating, as does France, Italy, Australia, and Portugal among others. 
+
+
+###Price of Wine vs Country of Origin
+```{r}
+# pipeline goes here
+wine_pipe5 <- wine_csv %>%
+  #filter(points > 90) %>%
+  filter(!is.na(country)) %>%
+  select(country, price) %>%
+  group_by(country) %>%
+  arrange(country)
+wine_pipe5
+
+# plot goes here
+wine_pipe5 %>%
+  ggplot(aes(x=country, y=price)) +
+  geom_bar(stat="identity",na.rm = TRUE, position = position_dodge())+
+  scale_y_continuous(labels = scales::dollar) +
+  ggtitle("Price of Wine vs Country of Origin")+
+  labs(x = "Country of Origin", y = "Price")+
+  theme(axis.text.x = element_text(angle=90, hjust = 1))
+```
+
+This plot displays the cumulative price of every wine in the dataset by what country its from. From this we can extrapolate that the French wines are the most expensive, followed by U.S. wines.
+
+
+# Part 3: Exploratory Data Analysis, Linear Regression and Hypothesis Testing
+
+###Exploratory Data Analysis:
+```{r}
+# plot goes here
+wine_pipe %>%
+  ggplot(aes(x=factor(points), y=price)) +
+  geom_violin()+
+  scale_y_continuous(labels = scales::dollar) +
+  ggtitle("Violin Plot of Price of Wine vs. Point Value Rating") +
+  labs(x = "Point Value", y = "Price")
+```
+
+The plot above is a violin plot, showing the Price of Wine vs Point Value Rating. From this we can see that the majority of the data about the wines is being plotted very close to the x-axis, as that is where the body of the violin is widest.
+
+
+###Linear Regression of Price of Wine vs Point Value Writing:
+```{r}
+# plot goes here
+wine_pipe %>%
+  ggplot(aes(x=points, y=price)) +
+  geom_point()+
+  geom_smooth(method="lm") +
+  scale_y_continuous(labels = scales::dollar) +
+  ggtitle("Scatter Plot of Price of Wine vs. Point Value Rating") +
+  labs(x = "Point Value", y = "Price")
+```
+
+Doing a linear regression on a scatter plot of the same graph as above (Price of Wine vs Point Value Rating), we get the following blue line: it fits what we saw in the plot of the violin plots, that the trend says close to the x axis, going through where most of the point value ratings are plotted with respect to the price of the bottle of wine. 
+
+
+###Hypothesis Test:
+
+Our null hypothesis is that there is no correlation between the price of wine and the point value it receives.
+
+```{r}
+#determine mean of points:
+wine_csv %>% summarize( meanP = mean(points), na.rm = TRUE)
+
+#determine standard deviation of points:
+wine_csv %>% summarize(stdDevPoints = sd(points), na.rm = TRUE)
+
+#hypothesis test
+sample_df <- wine_csv %>% sample_n(100)
+sample_df
+
+pnorm(mean(sample_df$points), mean(wine_csv$points), sd(sample_df$points), lower.tail = FALSE)
+
+```
+
+Based off of the p value received, we fail to reject the null hypothesis, as it is greater than alpha. 
+
+# Conclusion
+In conclusion, based on the dataset we have, the null hypothesis is supported in that there is some sort of correlation between the point value rating of a wine and the price it sells for. This dataset also displays a correlation between countries and the price of wines, countries and the point value ratings of wines, and countries and the production of certain varieties of wines. 
+
+This tutorial displays how wines are priced according to a point value rating, and which countries and provinces good wines tend to come from. Hopefully this tutorial and more advanced statistics can be used to more deeply analyse consumer habits to stay ahead of the curve and the latest trend.
+
+Thank you for reading this tutorial and hopefully you've gained more knowledge about data science, data visualisation, and data analysis in addition to learning about wine. 
+
+# References
+https://www.npr.org/sections/thetwo-way/2017/08/10/542409957/drinking-on-the-rise-in-u-s-especially-for-women-minorities-older-adults
+http://www.decanter.com/wine-news/latest-wine-consumption-trends-356443-356443/
+https://blogs.biomedcentral.com/bmcseriesblog/2017/06/12/micro-drinking-behaviors-responsible-increased-wine-consumption-served-larger-glass/
+https://www.kaggle.com/zynicide/wine-reviews/data
